@@ -1,0 +1,58 @@
+# Создай .gitignore с содержимым:
+@"
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+.venv
+pip-wheel-metadata/
+*.egg-info/
+.installed.cfg
+*.egg
+
+# Логи и временные файлы
+*.log
+*.sqlite3
+*.db
+*.sql
+*.dump
+*.cache
+.pytest_cache/
+.coverage
+*.cover
+*.mo
+*.pot
+
+# Дистрибутивы и сборки
+dist/
+build/
+*.exe
+
+# Данные и модели (если есть)
+*.pkl
+*.h5
+*.hdf5
+*.joblib
+data/processed/
+data/raw/
+
+# Конфиги (если не нужно делиться)
+config.yaml
+config.json
+secrets.ini
+"@ | Set-Content .gitignore
