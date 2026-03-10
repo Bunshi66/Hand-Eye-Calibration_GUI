@@ -50,6 +50,7 @@ build/
 *.joblib
 data/processed/
 data/raw/
+lessons
 
 # Конфиги (если не нужно делиться)
 config.yaml
