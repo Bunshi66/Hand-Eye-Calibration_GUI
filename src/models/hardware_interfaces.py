@@ -1,6 +1,16 @@
 from abc import ABC, abstractmethod
 import numpy as np
+from datetime import datetime
+from typing import Optional, Dict, Any
+import ctypes
+import logging
+import json
 import time
+from src.utils.paths import *
+
+from PyCameraSDK.GenericError import *
+from PyCameraSDK.Camera import *
+from PyCameraSDK.Common import *
 
 
 # --- ИНТЕРФЕЙСЫ ---
@@ -12,7 +22,7 @@ class   ICamera(ABC):
     def disconnect(self): pass
 
     @abstractmethod
-    def get_frame(self) -> np.ndarray: pass
+    def capture(self) -> np.ndarray: pass
 
 
 class IRobot(ABC):
@@ -26,22 +36,47 @@ class IRobot(ABC):
     def move_to(self, pose: list): pass
 
 
-# --- ЗАГЛУШКИ (MOCKS) ---
 class ScapeCamera(ICamera):
+    """Оболочка над SDK камеры SCAPE"""
+
+    def __init__(self, connection_params: dict):
+        """Инициализация и подключение к камере."""
+        pass
+
     def connect(self) -> bool:
-        print("Mock Camera Connected")
-        return True
+        """Установить соединение с камерой."""
+        pass
 
     def disconnect(self):
-        print("Mock Camera Disconnected")
+        """Отключиться от камеры."""
+        pass
 
-    def get_frame(self) -> np.ndarray:
-        # Генерируем шум или градиент для теста
-        # Возвращаем черную картинку 640x480 с бегущей полосой
-        img = np.zeros((480, 640, 3), dtype=np.uint8)
-        t = int(time.time() * 100) % 640
-        img[:, t:t + 10] = (0, 255, 0)  # Зеленая полоса
-        return img
+    def is_connected(self) -> bool:
+        """Проверка состояния подключения."""
+        pass
+
+    def capture(self) -> dict:
+        """
+        Returns: {
+            'point_cloud': ...,  # numpy array Nx3 или Nx6 (с цветом)
+            'image_2d': ...,     # numpy array HxWx3
+            'depth_map': ...,    # numpy array HxW
+            'timestamp': ...,
+        }
+        """
+        pass
+
+    def get_camera_info(self) -> dict:
+        """Получить информацию о камере (модель, серийник, параметры)."""
+        pass
+
+    def get_intrinsics(self) -> dict:
+        """Получить внутренние параметры камеры (матрица, дисторсия)."""
+        pass
+
+    def set_exposure(self, value: float):
+        """Настройка экспозиции."""
+        pass
 
 
 class MockRobot(IRobot):
@@ -60,3 +95,7 @@ class MockRobot(IRobot):
         print(f"Robot moving to {pose}...")
         time.sleep(0.5)  # Имитация движения
         self._pose = pose
+
+
+if __name__ == "__main__":
+    pass
