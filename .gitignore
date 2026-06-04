@@ -48,9 +48,8 @@ build/
 *.h5
 *.hdf5
 *.joblib
-data/processed/
-data/raw/
 lessons
+src
 
 # Конфиги (если не нужно делиться)
 config.yaml

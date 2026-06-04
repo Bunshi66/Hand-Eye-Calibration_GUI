@@ -1,0 +1,8 @@
+Cython==3.0.10
+opencv-python>=4.5.2.54
+
+# Notice: Latest version 2.x.x numpy.dtype size changed, may indicate binary incompatibility
+numpy==1.26.0
+
+Pillow>=8.3.0
+pylibtiff>=0.4.2

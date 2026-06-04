@@ -33,7 +33,7 @@ class MainWindow(QMainWindow):
         # Настройка доступа (Пример: Оператору нельзя в настройки калибровки)
         if self.user.role == UserRole.OPERATOR:
             # Например, выключаем вкладку результатов или делаем её read-only
-            # self.tabs.setTabEnabled(2, False)
+            #self.tabs.setTabEnabled(2, False)
             pass
 
         # Статус бар

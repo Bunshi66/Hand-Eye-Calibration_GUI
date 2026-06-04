@@ -1,7 +1,7 @@
 from PyQt5.QtCore import QObject, pyqtSignal, QTimer
 from PyQt5.QtGui import QImage, QPixmap
 import cv2
-from src.models.hardware_interfaces import ICamera, ScapeCamera, IRobot, MockRobot
+from src.models.hardware_interfaces import ScapeCamera, RobotInterface
 
 
 class HardwareController(QObject):
@@ -12,26 +12,23 @@ class HardwareController(QObject):
 
     def __init__(self):
         super().__init__()
-        self.camera: ICamera = None
-        self.robot: IRobot = None
 
         # Таймер для опроса камеры (30 FPS)
         self.timer = QTimer()
         self.timer.timeout.connect(self._update_loop)
 
-        # Пока используем заглушки
-        self.camera = ScapeCamera()
-        self.robot = MockRobot()
+        self.camera = ScapeCamera(connection_params={'ip': None})
+        self.robot = RobotInterface(ip_address="10.10.10.10")
 
     def connect_camera(self):
         # Тут логика выбора реальной камеры, пока Mock
         if self.camera.connect():
             self.on_camera_status_changed.emit(True)
-            self.timer.start(33)  # ~30 FPS
+            #self.timer.start(33)  # ~30 FPS
 
     def connect_robot(self):
         # Тут логика выбора реального робота, пока Mock
-        if self.robot.connect("127.0.0.1"):
+        if self.robot.connect():
             self.on_robot_status_changed.emit(True)
 
     def _update_loop(self):

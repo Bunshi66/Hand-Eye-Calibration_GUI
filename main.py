@@ -1,6 +1,14 @@
-from src.controllers.app_controller import AppController
+from source.controllers.app_controller import AppController
+from PyQt5.QtWidgets import QApplication
+import sys
 
-if __name__ == "__main__":
-    # Создаем и запускаем контроллер
+def main():
+    app = QApplication(sys.argv)
+
     controller = AppController()
     controller.run()
+
+    sys.exit(app.exec_())
+
+if __name__ == "__main__":
+    main()
