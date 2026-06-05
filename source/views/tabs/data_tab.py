@@ -9,35 +9,10 @@ import numpy as np
 import pyqtgraph as pg
 import os
 
-
-class CADViewWidget(gl.GLViewWidget):
-    def mouseMoveEvent(self, ev):
-        # Вычисляем, насколько сдвинулась мышь
-        diff = ev.pos() - self.mousePos
-        self.mousePos = ev.pos()
-
-        if ev.buttons() == Qt.LeftButton:
-            # СВОБОДНОЕ ВРАЩЕНИЕ (Без лимитов от -90 до +90)
-            # Коэффициент 0.5 делает вращение более плавным
-            self.opts['azimuth'] -= diff.x() * 0.25
-            self.opts['elevation'] += diff.y() * 0.25
-            self.update()
-
-        elif ev.buttons() == Qt.RightButton:
-            # Сдвиг сцены (Pan)
-            self.pan(diff.x(), diff.y(), 0, relative='view')
-
-        elif ev.buttons() == Qt.MiddleButton:
-            # Плавный Зум (или просто крутите колесико мыши)
-            self.opts['distance'] += diff.y() * 0.5
-            self.update()
-
 class DataTab(QWidget):
     request_add_pose = pyqtSignal()  # Запросить текущие joint angles и добавить в таблицу
     request_update_pose = pyqtSignal(int)  # Перезаписать позу с индексом (int) текущими координатами
     request_move_to = pyqtSignal(int)  # Отправить робота к позе с индексом (int)
-    request_test_shot = pyqtSignal()
-    request_show_cad = pyqtSignal()
     request_clear = pyqtSignal()
     request_save_poses = pyqtSignal(str)
     request_load_poses = pyqtSignal(str)
@@ -51,10 +26,10 @@ class DataTab(QWidget):
         self._connect_internal_signals()
 
     def _init_ui(self):
-        main_layout = QHBoxLayout()
+        main_layout = QVBoxLayout()
 
         # ================== ЛЕВАЯ ПАНЕЛЬ (ПОЗЫ) ==================
-        left_layout = QVBoxLayout()
+        up_layout = QVBoxLayout()
         # left_layout.addWidget(QLabel("<b>1. Маршрут калибровки (Waypoints)</b>"))
 
         self.table = QTableWidget(0, 8)
@@ -71,7 +46,7 @@ class DataTab(QWidget):
             header.setSectionResizeMode(i, QHeaderView.Stretch)
 
         self.table.setSelectionBehavior(QTableWidget.SelectRows)
-        left_layout.addWidget(self.table)
+        up_layout.addWidget(self.table)
 
         # Управление списком
         btn_grid = QHBoxLayout()
@@ -81,54 +56,21 @@ class DataTab(QWidget):
         btn_grid.addWidget(self.btn_load)
         btn_grid.addWidget(self.btn_save)
         btn_grid.addWidget(self.btn_clear)
-        left_layout.addLayout(btn_grid)
+        up_layout.addLayout(btn_grid)
 
         # Добавляем левую панель в главное окно (занимает ~35% ширины)
-        main_layout.addLayout(left_layout, 45)
+        main_layout.addLayout(up_layout, 80)
 
-        # ================== ПРАВАЯ ЧАСТЬ (VIEWPORT + TOOLS) ==================
-        right_side_layout = QVBoxLayout()
-
-        # ------------------ ВЕРХ ПРАВОЙ ЧАСТИ (VIEWPORT) ------------------
-        viewport_layout = QVBoxLayout()
-
-        view_control_layout = QHBoxLayout()
-
-        self.btn_reset_view = QPushButton("⟲ Reset View")
-        self.btn_reset_view.setFixedWidth(120)
-        self.btn_reset_view.setStyleSheet("background-color: #555; color: white; border-radius: 4px; padding: 5px;")
-        view_control_layout.addWidget(self.btn_reset_view, alignment=Qt.AlignRight)
-
-        self.btn_test_shot = QPushButton("Test Shot")
-        self.btn_test_shot.setFixedWidth(120)
-        self.btn_test_shot.setStyleSheet("background-color: #555; color: white; border-radius: 4px; padding: 5px;")
-        view_control_layout.addWidget(self.btn_test_shot, alignment=Qt.AlignRight)
-
-        self.btn_show_cad = QPushButton("Show CAD")
-        self.btn_show_cad.setFixedWidth(120)
-        self.btn_show_cad.setStyleSheet("background-color: #555; color: white; border-radius: 4px; padding: 5px;")
-        view_control_layout.addWidget(self.btn_show_cad, alignment=Qt.AlignRight)
-
-        view_control_layout.addStretch()
-        viewport_layout.addLayout(view_control_layout)
-
-        self.viewer = CADViewWidget()
-        self.viewer.setBackgroundColor('k')
-
-        self.scatter = gl.GLScatterPlotItem(pos=np.zeros((1, 3)), color=(0, 1, 0, 1), size=2)
-        self.viewer.addItem(self.scatter)
-
-        viewport_layout.addWidget(self.viewer)
-
-        # Добавляем Viewport в правую часть (занимает ~70% ВЫСОТЫ правой части)
-        right_side_layout.addLayout(viewport_layout, 70)
+        bottom_layout = QHBoxLayout()
 
         # ------------------ НИЗ ПРАВОЙ ЧАСТИ (TOOLS) ------------------
-        # Делаем горизонтальный Layout для инструментов, чтобы они стояли рядом
         bottom_tools_layout = QHBoxLayout()
 
         # --- ОБЪЕДИНЕННАЯ ГРУППА: Сцена и Сбор данных ---
-        data_group = QGroupBox("2. Настройка и Сбор данных")
+        # data_group = QGroupBox("2. Настройка и Сбор данных")
+        data_group = QGroupBox()
+        data_group.setStyleSheet("QGroupBox { border: 1px solid #2196F3; font-weight: bold; }")
+
         data_layout = QHBoxLayout()
 
         # Левая колонка группы: Камера и Робот
@@ -136,36 +78,30 @@ class DataTab(QWidget):
         cam_form = QFormLayout()
 
         teach_btns = QHBoxLayout()
+
+        btn_style = "background-color: #555; color: white; border-radius: 4px; padding: 5px;"
+
         self.btn_add_pose = QPushButton("Add Pose")
+        self.btn_add_pose.setStyleSheet(btn_style)
         self.btn_update_pose = QPushButton("Upd Pose")
+        self.btn_update_pose.setStyleSheet(btn_style)
         self.btn_move_to = QPushButton("Move To")
+        self.btn_move_to.setStyleSheet(btn_style)
         teach_btns.addWidget(self.btn_add_pose)
         teach_btns.addWidget(self.btn_update_pose)
         teach_btns.addWidget(self.btn_move_to)
 
         scene_layout.addLayout(cam_form)
         scene_layout.addLayout(teach_btns)
-        #scene_layout.addWidget(self.btn_test_shot)
-
-        # Правая колонка группы: Авто-сбор
-        # batch_layout = QVBoxLayout()
-        # self.btn_start_collect_data = QPushButton("START DATA COLLECTION")
-        # self.btn_start_collect_data.setMinimumHeight(55)
-        # self.btn_start_collect_data.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold;")
-        #
-        # self.progress_bar = QProgressBar()
-        # self.progress_bar.setValue(0)
-        #
-        # scene_layout.addWidget(self.btn_start_collect_data)
-        # scene_layout.addWidget(self.progress_bar)
 
         # Собираем левую (Сцена) и правую (Батч) колонки в одну группу
         data_layout.addLayout(scene_layout, 50)
         data_group.setLayout(data_layout)
 
         # --- НОВАЯ ГРУППА: Вычисление Hand-Eye ---
-        calib_group = QGroupBox("3. Hand-Eye Calibration")
-        calib_group.setStyleSheet("QGroupBox { border: 3px solid #9C27B0; font-weight: bold; }")
+        # calib_group = QGroupBox("3. Hand-Eye Calibration")
+        calib_group = QGroupBox()
+        calib_group.setStyleSheet("QGroupBox { border: 1px solid #2196F3; font-weight: bold; }")
         calib_layout = QVBoxLayout()
 
         calib_form = QFormLayout()
@@ -174,23 +110,17 @@ class DataTab(QWidget):
         calib_form.addRow("Тип:", self.combo_calib_type)
         calib_layout.addLayout(calib_form)
 
-        # self.btn_test_shot = QPushButton("Test Shot")
-        # self.btn_test_shot.setFixedWidth(120)
-        # self.btn_test_shot.setStyleSheet("background-color: #555; color: white; border-radius: 4px; padding: 5px;")
-        # view_control_layout.addWidget(self.btn_test_shot, alignment=Qt.AlignRight)
-
         self.btn_load_CAD_file = QPushButton("Load CAD model")
-        self.btn_load_CAD_file.setFixedHeight(50)
+        self.btn_load_CAD_file.setFixedHeight(35)
         calib_layout.addWidget(self.btn_load_CAD_file)
-        #calib_layout.addStretch()  # Прижимаем кнопку вниз
 
         self.btn_start_collect_data = QPushButton("START DATA COLLECTION")
-        self.btn_start_collect_data.setFixedHeight(50)
+        self.btn_start_collect_data.setFixedHeight(35)
         self.btn_start_collect_data.setStyleSheet("background-color: #2196F3; color: white; font-weight: bold; font-size: 13px;")
         calib_layout.addWidget(self.btn_start_collect_data)
 
         self.btn_run_calib = QPushButton("RUN CALIBRATION")
-        self.btn_run_calib.setFixedHeight(50)
+        self.btn_run_calib.setFixedHeight(35)
         self.btn_run_calib.setStyleSheet("background-color: #9C27B0; color: white; font-weight: bold; font-size: 13px;")
         calib_layout.addWidget(self.btn_run_calib)
 
@@ -198,24 +128,18 @@ class DataTab(QWidget):
         self.progress_bar.setValue(0)
         calib_layout.addWidget(self.progress_bar)
 
+        calib_layout.addStretch()  # Прижимаем кнопку вниз
         calib_group.setLayout(calib_layout)
 
         bottom_tools_layout.addWidget(data_group, 50)
         bottom_tools_layout.addWidget(calib_group, 50)
 
         # Добавляем нижнюю панель в правую часть (занимает ~30% ВЫСОТЫ)
-        right_side_layout.addLayout(bottom_tools_layout, 30)
+        bottom_layout.addLayout(bottom_tools_layout, 30)
 
         # ================== ФИНАЛЬНАЯ СБОРКА ==================
         # Добавляем правую часть в главное окно (занимает ~65% ширины)
-        main_layout.addLayout(right_side_layout, 55)
-
-        # ЗАДАЕМ НАЧАЛЬНЫЕ ПАРАМЕТРЫ КАМЕРЫ
-        self.default_cam_pos = pg.Vector(0, 0, 0)
-        self.default_cam_dist = 100
-        self.default_cam_elev = -90
-        self.default_cam_azim = -90
-        self.reset_view()
+        main_layout.addLayout(bottom_layout, 20)
 
         self.setLayout(main_layout)
 
@@ -226,8 +150,6 @@ class DataTab(QWidget):
         """
         self.btn_add_pose.clicked.connect(self.request_add_pose.emit)
         self.btn_clear.clicked.connect(self.request_clear.emit)
-        self.btn_test_shot.clicked.connect(self.request_test_shot.emit)
-        self.btn_show_cad.clicked.connect(self.request_show_cad.emit)
 
         self.btn_update_pose.clicked.connect(self._on_update_pose_clicked)
         self.btn_move_to.clicked.connect(self._on_move_to_clicked)
@@ -236,8 +158,6 @@ class DataTab(QWidget):
         self.btn_start_collect_data.clicked.connect(self._on_start_calibration_clicked)
         self.btn_run_calib.clicked.connect(self._on_run_calib_clicked)
         self.btn_load_CAD_file.clicked.connect(self._on_load_CAD_clicked)
-
-        self.btn_reset_view.clicked.connect(self.reset_view)
 
     def _on_run_calib_clicked(self):
         calib_type = self.combo_calib_type.currentText()
@@ -254,7 +174,6 @@ class DataTab(QWidget):
             self.btn_start_collect_data.setText("COLLECTING...")
 
         self.btn_start_collect_data.setEnabled(flag)
-        self.btn_test_shot.setEnabled(flag)
         self.btn_add_pose.setEnabled(flag)
         self.btn_update_pose.setEnabled(flag)
         self.btn_move_to.setEnabled(flag)
@@ -349,9 +268,6 @@ class DataTab(QWidget):
         row = self.table.rowCount()
         self.table.insertRow(row)
 
-        # 0: ID
-        #self.table.setItem(row, 0, self._create_item(str(waypoint_id)))
-
         # 1-3: Translation (X, Y, Z)
         self.table.setItem(row, 0, self._create_item(f"{tcp_pose[0]:.2f}"))
         self.table.setItem(row, 1, self._create_item(f"{tcp_pose[1]:.2f}"))
@@ -387,8 +303,10 @@ class DataTab(QWidget):
         self.table.item(row_index, 6).setText(detect_error_text)
 
         # 3. Обновляем Fitness
-        fitness_text = f"{waypoint.fitness:.4f}" if waypoint.fitness is not None else "—"
-        self.table.item(row_index, 6).setText(detect_error_text)
+        # TODO Добавить передачу аргумента fitness из data_model
+        # fitness_text = f"{waypoint.fitness:.4f}" if waypoint.fitness is not None else "—"
+        # self.table.item(row_index, 7).setText(fitness_text)
+
         # # 3. Обновляем визуальный статус (включен/выключен)
         # color = Qt.black if waypoint.enabled else Qt.gray
         # for col in range(8):
@@ -405,67 +323,3 @@ class DataTab(QWidget):
     def clear_table(self):
         """Очищает таблицу"""
         self.table.setRowCount(0)
-
-    # @staticmethod
-    # def _format_pose(tcp_pose) -> str:
-    #     """Форматирует массив координат в красивую строку"""
-    #     try:
-    #         return (f"X:{tcp_pose[0]:.1f} Y:{tcp_pose[1]:.1f} Z:{tcp_pose[2]:.1f} | "
-    #                 f"Rx:{tcp_pose[3]:.2f} Ry:{tcp_pose[4]:.2f} Rz:{tcp_pose[5]:.2f}")
-    #     except (IndexError, TypeError):
-    #         return str(tcp_pose)
-
-    def reset_view(self):
-        """Возвращает камеру в сохраненную стартовую позицию"""
-        self.viewer.setCameraPosition(
-            pos=self.default_cam_pos,
-            distance=self.default_cam_dist,
-            elevation=self.default_cam_elev,
-            azimuth=self.default_cam_azim
-        )
-
-    def display_point_cloud(self, frame_data: dict):
-        points = frame_data.get('points')
-        real_colors = frame_data.get('colors')
-
-        if points is None or len(points) == 0:
-            return
-
-        # --- Рассчет цветов (оставляем вашу синюю палитру без изменений) ---
-        if real_colors is not None and len(real_colors) == len(points):
-            colors = np.ones((len(points), 4))
-            colors[:, :3] = real_colors
-        else:
-            z = points[:, 2]
-            z_min, z_max = z.min(), z.max()
-            z_range = z_max - z_min if (z_max - z_min) > 0 else 1.0
-            z_norm = (z - z_min) / z_range
-
-            pos = np.array([0.0, 0.5, 1.0])
-            color_array = np.array([
-                [0, 20, 80, 255],
-                [0, 100, 200, 255],
-                [0, 255, 255, 255]
-            ], dtype=np.ubyte)
-
-            cmap = pg.ColorMap(pos, color_array)
-            colors = cmap.map(z_norm) / 255.0
-
-        self.scatter.setData(pos=points, color=colors, size=2, pxMode=True)
-
-        # --- НАСТРОЙКА И ЗАПОМИНАНИЕ ИДЕАЛЬНОЙ КАМЕРЫ ---
-        centroid = np.mean(points, axis=0)
-        max_dist = np.max(np.linalg.norm(points - centroid, axis=1))
-
-        # Обновляем переменные "по умолчанию" для новой детали
-        self.default_cam_pos = pg.Vector(centroid[0], centroid[1], centroid[2])
-
-        # Отдаляем камеру так, чтобы было видно и деталь, и нулевую точку (0,0,0)
-        # Находим расстояние от центра детали до нуля
-        dist_to_origin = np.linalg.norm(centroid)
-
-        # Итоговая дистанция зума - это максимум между размером детали и расстоянием до нуля
-        self.default_cam_dist = max(max_dist * 2.5, dist_to_origin * 1.5)
-
-        # Применяем этот вид (то же самое, что нажать Reset View)
-        self.reset_view()

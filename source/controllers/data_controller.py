@@ -25,13 +25,23 @@ class DataController(QObject):
         self.calib_model.set_cad_path(cad_path)
 
 
-    def show_cad(self):
+    def show_cad_pcd(self):
         if not self.calib_model.get_cad_path():
             self.error_occurred.emit("CAD модель не загружена")
             return
 
         try:
-            self.calib_model.get_render_data()
+            self.calib_model.get_pcd_data()
+        except Exception as e:
+            self.error_occurred.emit("Ошибка при отображении CAD модели")
+
+    def show_cad_mesh(self):
+        if not self.calib_model.get_cad_path():
+            self.error_occurred.emit("CAD модель не загружена")
+            return
+
+        try:
+            self.calib_model.get_mesh_data()
         except Exception as e:
             self.error_occurred.emit("Ошибка при отображении CAD модели")
 

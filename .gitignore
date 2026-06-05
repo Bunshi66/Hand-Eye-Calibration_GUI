@@ -50,6 +50,8 @@ build/
 *.joblib
 lessons
 src
+libs/samples
+old
 
 # Конфиги (если не нужно делиться)
 config.yaml

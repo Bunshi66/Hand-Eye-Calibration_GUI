@@ -8,6 +8,7 @@ class CalibrationModel(QObject):
     calculation_finished = pyqtSignal(object, dict) # Передает (Матрицу 4x4, общие метрики)
     error_occurred = pyqtSignal(str)
     cad_model_recieved = pyqtSignal(object)
+    cad_model_mesh_recieved = pyqtSignal(object)
 
     def __init__(self):
         super().__init__()
@@ -40,6 +41,7 @@ class CalibrationModel(QObject):
             self._cad_pcd = mesh.sample_points_uniformly(number_of_points=50000)
 
         self._cad_pcd.estimate_normals()
+        #self._cad_mesh.estimate_normals()
 
         points_np = np.asarray(self._cad_pcd.points)
 
@@ -63,16 +65,21 @@ class CalibrationModel(QObject):
     def get_cad_path(self):
         return self._cad_path
 
-    # def get_render_data(self):
-    #     """Отдает вершины и полигоны для pyqtgraph (UI)"""
-    #     if self._cad_mesh is not None:
-    #         # Преобразуем векторы Open3D в массивы numpy, понятные для pyqtgraph
-    #         vertices = np.asarray(self._cad_mesh.vertices)
-    #         faces = np.asarray(self._cad_mesh.triangles)
-    #         return vertices, faces
-    #     return None, None
+    def get_mesh_data(self):
+        """Отдает вершины и полигоны для pyqtgraph (UI)"""
+        if self._cad_mesh is not None:
+            # Преобразуем векторы Open3D в массивы numpy, понятные для pyqtgraph
+            vertices = np.asarray(self._cad_mesh.vertices)
+            faces = np.asarray(self._cad_mesh.triangles)
 
-    def get_render_data(self):
+            result = {
+                'vertices': vertices,
+                'faces': faces
+            }
+
+        self.cad_model_mesh_recieved.emit(result)
+
+    def get_pcd_data(self):
         points_np = np.asarray(self._cad_pcd.points)
 
         # 2. Извлекаем цвета, если они есть (например, формат PLY поддерживает цвета)

@@ -40,6 +40,9 @@ class AppController(QObject):
         self.main_view.tab_setup.request_toggle_robot.connect(self.hw_controller.toggle_robot_connection)
         self.main_view.tab_setup.request_toggle_camera.connect(self.hw_controller.toggle_camera_connection)
 
+        self.main_view.viewport_panel.request_test_shot.connect(self.hw_controller.trigger_test_shot)
+        self.main_view.viewport_panel.request_show_cad.connect(self.data_controller.show_cad_pcd)
+        self.main_view.viewport_panel.request_show_cad_mesh.connect(self.data_controller.show_cad_mesh)
         # --- МОДЕЛЬ -> UI (Реакция на изменение состояния железа) ---
         self.robot_model.connected.connect(self.main_view.tab_setup.update_robot_status)
         self.camera_model.connected.connect(self.main_view.tab_setup.update_camera_status)
@@ -54,8 +57,6 @@ class AppController(QObject):
         self.main_view.tab_data.request_update_pose.connect(self.data_controller.update_current_pose)
         self.main_view.tab_data.request_move_to.connect(self.data_controller.move_to_waypoint)
         self.main_view.tab_data.request_clear.connect(self.data_controller.clear_waypoints)
-        self.main_view.tab_data.request_test_shot.connect(self.hw_controller.trigger_test_shot)
-        self.main_view.tab_data.request_show_cad.connect(self.data_controller.show_cad)
         self.main_view.tab_data.request_save_poses.connect(self.data_controller.save_poses)
         self.main_view.tab_data.request_load_poses.connect(self.data_controller.load_poses)
         self.main_view.tab_data.request_start_collect_data.connect(self.data_controller.start_collecting_data)
@@ -79,8 +80,10 @@ class AppController(QObject):
         self.data_controller.progress_finished.connect(self.main_view.tab_data.finished_progress)
         self.data_controller.calib_success.connect(self.main_view.tab_data.success_calib)
 
-        self.camera_model.frame_received.connect(self.main_view.tab_data.display_point_cloud)
-        self.calib_model.cad_model_recieved.connect(self.main_view.tab_data.display_point_cloud)
+        self.camera_model.frame_received.connect(self.main_view.viewport_panel.gl_widget.display_point_cloud)
+        self.calib_model.cad_model_recieved.connect(self.main_view.viewport_panel.gl_widget.display_point_cloud)
+        self.calib_model.cad_model_mesh_recieved.connect(self.main_view.viewport_panel.gl_widget.display_mesh)
+
 
     def run(self):
         self.main_view.show()
